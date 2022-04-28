@@ -1,12 +1,9 @@
-
 import pygame as pg
 import random
 import time
 import chess
 
 pg.init()
-
-
 
 # CONSTANTS
 DIMTILE = 100
@@ -20,13 +17,29 @@ bRed = (255, 0, 0)
 bYellow = (255, 255, 0)
 bGreen = (0, 255, 0)
 
-#set up chess board window (100 x 100 pixels e/gameach tile)
-board = pg.display.set_mode([DIMTILE*8, DIMTILE*8])
+# Piece images
+bp = pg.image.load('images\BlackPawn.png')
+br = pg.image.load('images\BlackRook.png')
+bn = pg.image.load('images\BlackKnight.png')
+bk = pg.image.load('images\BlackKing.png')
+bq = pg.image.load('images\BlackQueen.png')
+bp = pg.image.load('images\BlackBishop.png')
+wp = pg.image.load('images\WhitePawn.png')
+wr = pg.image.load('images\WhiteRook.png')
+wn = pg.image.load('images\WhiteKnight.png')
+wk = pg.image.load('images\WhiteKing.png')
+wq = pg.image.load('images\WhiteQueen.png')
+wp = pg.image.load('images\WhiteBishop.png')
+
+#set up chess screen window (100 x 100 pixels e/gameach tile)
+screen = pg.display.set_mode([DIMTILE*8, DIMTILE*8])
 timer = pg.time.Clock()
 
 # Variables
 difficulty = 0
-piecePlacement = []
+board = chess.Board.from_chess960_pos(random.randint(0, 959))
+print(board)
+print(board.legal_moves)
 isRunning = True
 showMenu = True
 
@@ -44,22 +57,22 @@ def makeButton(txt, x, y, w, h, default, hover):
     mouse = pg.mouse.get_pos()
 
     if x+w > mouse[0] > x and y+h > mouse[1] > y:
-        pg.draw.rect(board, hover,(x,y,w,h))
+        pg.draw.rect(screen, hover,(x,y,w,h))
     else:
-        pg.draw.rect(board, default,(x,y,w,h))
+        pg.draw.rect(screen, default,(x,y,w,h))
 
     buttonText = pg.font.SysFont("cambria", 40)
     tSurf, tRect = makeTxt(txt, buttonText)
     tRect.center = ((x+(w/2)), (y+(h/2))-1)
-    board.blit(tSurf, tRect)
+    screen.blit(tSurf, tRect)
 
-#MODIFIES: board
+#MODIFIES: screen
 #EFFECTS: Creates text centered at x, y, with font size s and font f
 def makeText(txt, x, y, s, f):
     text = pg.font.SysFont(f, s)
     TSurf, TRect = makeTxt(txt, text)
     TRect.center = (x, y)
-    board.blit(TSurf, TRect)
+    screen.blit(TSurf, TRect)
 
 def startScreen():
     while showMenu:
@@ -71,7 +84,7 @@ def startScreen():
                 handleEvent(mouse[0], mouse[1])
         
         mouse = pg.mouse.get_pos()
-        board.fill(white)
+        screen.fill(white)
         
         #Intro Text
         makeText("RandomChess", DIMTILE*4, DIMTILE, 70, 'cambria')
@@ -86,8 +99,6 @@ def startScreen():
         pg.display.update()
         timer.tick(30)
 
-
-
 def mainGameScreen():
     while isRunning:
         for event in pg.event.get():
@@ -99,12 +110,12 @@ def mainGameScreen():
         mouse = pg.mouse.get_pos()
 
 
-        board.fill(green)
+        screen.fill(green)
 
         for i in range (0, 8):
             for j in range (0, 8):
                 if ((i + j) % 2 == 0):
-                    pg.draw.rect(board, white, 
+                    pg.draw.rect(screen, white, 
                     (i*DIMTILE, j*DIMTILE, DIMTILE, DIMTILE))
         
         else:
