@@ -40,24 +40,32 @@ difficulty = 0
 board = chess.Board.from_chess960_pos(random.randint(0, 959))
 print(board)
 print(board.legal_moves)
-isRunning = True
-showMenu = True
 
 #Event Handling
 def handleEvent(x, y):
-    #showMenu = False
-    print("Hi")
+    print(difficulty)
 
 #EFFECTS: Creates text for buttons, helper
 def makeTxt(text, font):
     textSurface = font.render(text, True, black)
     return textSurface, textSurface.get_rect()
 
-def makeButton(txt, x, y, w, h, default, hover):
+def makeButton(txt, x, y, w, h, default, hover, function=None):
     mouse = pg.mouse.get_pos()
+    press = pg.mouse.get_pressed()
 
     if x+w > mouse[0] > x and y+h > mouse[1] > y:
         pg.draw.rect(screen, hover,(x,y,w,h))
+        if press[0] == 1 and function != None:
+            global difficulty
+            if function == "0":
+                difficulty = 0
+            elif function == "1":
+                difficulty = 1
+            else:
+                difficulty = 2
+            mainGameScreen()
+            
     else:
         pg.draw.rect(screen, default,(x,y,w,h))
 
@@ -75,6 +83,7 @@ def makeText(txt, x, y, s, f):
     screen.blit(TSurf, TRect)
 
 def startScreen():
+    showMenu = True
     while showMenu:
         for event in pg.event.get():
             if event.type == pg.QUIT:
@@ -91,19 +100,21 @@ def startScreen():
         makeText("Choose a Difficulty:", DIMTILE*4, DIMTILE*2.25, 50, 'cambria')
 
         # Difficulty Buttons
-        makeButton("Easy", DIMTILE*3, DIMTILE*3, DIMTILE*2, 50, green, bGreen)
-        makeButton("Medium", DIMTILE*3, DIMTILE*4.5, DIMTILE*2, 50, yellow, bYellow)
-        makeButton("Hard", DIMTILE*3, DIMTILE*6, DIMTILE*2, 50, red, bRed)
+        makeButton("Easy", DIMTILE*3, DIMTILE*3, DIMTILE*2, 50, green, bGreen, "0")
+        makeButton("Medium", DIMTILE*3, DIMTILE*4.5, DIMTILE*2, 50, yellow, bYellow, "1")
+        makeButton("Hard", DIMTILE*3, DIMTILE*6, DIMTILE*2, 50, red, bRed, "2")
 
 
         pg.display.update()
         timer.tick(30)
 
 def mainGameScreen():
+    isRunning = True
     while isRunning:
         for event in pg.event.get():
             if event.type == pg.QUIT:
-                isRunning = False
+                pg.quit()
+                quit()
             if event.type == pg.MOUSEBUTTONDOWN:
                 handleEvent(mouse[0], mouse[1])
 
@@ -118,13 +129,11 @@ def mainGameScreen():
                     pg.draw.rect(screen, white, 
                     (i*DIMTILE, j*DIMTILE, DIMTILE, DIMTILE))
         
-        else:
-            startScreen()
+        
         pg.display.update()
         timer.tick(30)
 
 startScreen()
-mainGameScreen()
 
 # User has Exit
 pg.quit()
