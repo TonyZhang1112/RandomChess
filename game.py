@@ -2,7 +2,7 @@
 import pygame as pg
 import random
 import time
-
+import chess
 
 pg.init()
 
@@ -35,9 +35,31 @@ def handleEvent(x, y):
     #showMenu = False
     print("Hi")
 
+#EFFECTS: Creates text for buttons, helper
 def makeTxt(text, font):
     textSurface = font.render(text, True, black)
     return textSurface, textSurface.get_rect()
+
+def makeButton(txt, x, y, w, h, default, hover):
+    mouse = pg.mouse.get_pos()
+
+    if x+w > mouse[0] > x and y+h > mouse[1] > y:
+        pg.draw.rect(board, hover,(x,y,w,h))
+    else:
+        pg.draw.rect(board, default,(x,y,w,h))
+
+    buttonText = pg.font.SysFont("cambria", 40)
+    tSurf, tRect = makeTxt(txt, buttonText)
+    tRect.center = ((x+(w/2)), (y+(h/2))-1)
+    board.blit(tSurf, tRect)
+
+#MODIFIES: board
+#EFFECTS: Creates text centered at x, y, with font size s and font f
+def makeText(txt, x, y, s, f):
+    text = pg.font.SysFont(f, s)
+    TSurf, TRect = makeTxt(txt, text)
+    TRect.center = (x, y)
+    board.blit(TSurf, TRect)
 
 def startScreen():
     while showMenu:
@@ -50,47 +72,16 @@ def startScreen():
         
         mouse = pg.mouse.get_pos()
         board.fill(white)
-        titleText = pg.font.SysFont('cambria',70)
-        TextSurf, TextRect = makeTxt("RandomChess", titleText)
-        TextRect.center = (DIMTILE*4, DIMTILE)
-        board.blit(TextSurf, TextRect)
-
-        chooseText = pg.font.SysFont('cambria', 50)
-        textSurf, textRect = makeTxt("Choose a Difficulty:", chooseText)
-        textRect.center = (400, 225)
-        board.blit(textSurf, textRect)
-
-        #buttons that lighten up when hovered over
-        if (300 <= mouse[0] <= 500 and 300 <= mouse[1] <= 350):
-            pg.draw.rect(board, bGreen, (300, 300, 200, 50))
-        else:
-            pg.draw.rect(board, green, (300, 300, 200, 50))
-
-        if (300 <= mouse[0] <= 500 and 450 <= mouse[1] <= 500):
-            pg.draw.rect(board, bYellow, (300, 450, 200, 50))
-        else:
-            pg.draw.rect(board, yellow, (300, 450, 200, 50))
-
-        if (300 <= mouse[0] <= 500 and 600 <= mouse[1] <= 650):
-            pg.draw.rect(board, bRed, (300, 600, 200, 50))
-        else:
-            pg.draw.rect(board, red, (300, 600, 200, 50))
-
         
-        buttonText = pg.font.SysFont('cambria', 40)
-        textSurf, textRect = makeTxt("Easy", buttonText)
-        textRect.center = (400, 324)
-        board.blit(textSurf, textRect)
+        #Intro Text
+        makeText("RandomChess", DIMTILE*4, DIMTILE, 70, 'cambria')
+        makeText("Choose a Difficulty:", DIMTILE*4, DIMTILE*2.25, 50, 'cambria')
 
-        buttonText = pg.font.SysFont('cambria', 40)
-        textSurf, textRect = makeTxt("Medium", buttonText)
-        textRect.center = (400, 474)
-        board.blit(textSurf, textRect)
+        # Difficulty Buttons
+        makeButton("Easy", DIMTILE*3, DIMTILE*3, DIMTILE*2, 50, green, bGreen)
+        makeButton("Medium", DIMTILE*3, DIMTILE*4.5, DIMTILE*2, 50, yellow, bYellow)
+        makeButton("Hard", DIMTILE*3, DIMTILE*6, DIMTILE*2, 50, red, bRed)
 
-        buttonText = pg.font.SysFont('cambria', 40)
-        textSurf, textRect = makeTxt("Hard", buttonText)
-        textRect.center = (400, 624)
-        board.blit(textSurf, textRect)
 
         pg.display.update()
         timer.tick(30)
@@ -107,14 +98,14 @@ def mainGameScreen():
 
         mouse = pg.mouse.get_pos()
 
-        if inGame:
-            board.fill(green)
 
-            for i in range (0, 8):
-                for j in range (0, 8):
-                    if ((i + j) % 2 == 0):
-                        pg.draw.rect(board, white, 
-                        (i*DIMTILE, j*DIMTILE, DIMTILE, DIMTILE))
+        board.fill(green)
+
+        for i in range (0, 8):
+            for j in range (0, 8):
+                if ((i + j) % 2 == 0):
+                    pg.draw.rect(board, white, 
+                    (i*DIMTILE, j*DIMTILE, DIMTILE, DIMTILE))
         
         else:
             startScreen()
