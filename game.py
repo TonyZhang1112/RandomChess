@@ -6,7 +6,7 @@ import chess
 pg.init()
 
 # CONSTANTS
-DIMTILE = 100
+DIMTILE = 80
 green = (0, 179, 0)
 white = (255, 255, 255)
 black = (0, 0, 0)
@@ -18,18 +18,18 @@ bYellow = (255, 255, 0)
 bGreen = (0, 255, 0)
 
 # Piece images
-bp = pg.image.load('images\BlackPawn.png')
-br = pg.image.load('images\BlackRook.png')
-bn = pg.image.load('images\BlackKnight.png')
-bk = pg.image.load('images\BlackKing.png')
-bq = pg.image.load('images\BlackQueen.png')
-bp = pg.image.load('images\BlackBishop.png')
-wp = pg.image.load('images\WhitePawn.png')
-wr = pg.image.load('images\WhiteRook.png')
-wn = pg.image.load('images\WhiteKnight.png')
-wk = pg.image.load('images\WhiteKing.png')
-wq = pg.image.load('images\WhiteQueen.png')
-wp = pg.image.load('images\WhiteBishop.png')
+bpIMG = pg.image.load('images\BlackPawn.png')
+brIMG = pg.image.load('images\BlackRook.png')
+bnIMG = pg.image.load('images\BlackKnight.png')
+bkIMG = pg.image.load('images\BlackKing.png')
+bqIMG = pg.image.load('images\BlackQueen.png')
+bbIMG = pg.image.load('images\BlackBishop.png')
+wpIMG = pg.image.load('images\WhitePawn.png')
+wrIMG = pg.image.load('images\WhiteRook.png')
+wnIMG = pg.image.load('images\WhiteKnight.png')
+wkIMG = pg.image.load('images\WhiteKing.png')
+wqIMG = pg.image.load('images\WhiteQueen.png')
+wbIMG = pg.image.load('images\WhiteBishop.png')
 
 #set up chess screen window (100 x 100 pixels e/gameach tile)
 screen = pg.display.set_mode([DIMTILE*8, DIMTILE*8])
@@ -38,8 +38,14 @@ timer = pg.time.Clock()
 # Variables
 difficulty = 0
 board = chess.Board.from_chess960_pos(random.randint(0, 959))
-print(board)
-print(board.legal_moves)
+legalMoves = list(board.legal_moves)
+print(legalMoves[random.randint(0, len(legalMoves)-1)])
+move = legalMoves[random.randint(0, len(legalMoves)-1)]
+if move in board.legal_moves:
+    board.push(move)
+    print(board)
+print(board.piece_at(chess.B4))
+print(board.generate_legal_moves())
 
 #Event Handling
 def handleEvent(x, y):
@@ -81,6 +87,37 @@ def makeText(txt, x, y, s, f):
     TSurf, TRect = makeTxt(txt, text)
     TRect.center = (x, y)
     screen.blit(TSurf, TRect)
+
+#int, int, Piece -> None
+#Draws the given piece at tile (x, y)
+def drawPiece(x, y, piece):
+    img = bpIMG
+    if (piece.color == chess.WHITE):
+        if piece.piece_type == chess.PAWN:
+            img = wpIMG
+        elif piece.piece_type == chess.BISHOP:
+            img = wbIMG
+        elif piece.piece_type == chess.KNIGHT:
+            img = wnIMG
+        elif piece.piece_type == chess.QUEEN:
+            img = wqIMG
+        elif piece.piece_type == chess.KING:
+            img = wkIMG
+        elif piece.piece_type == chess.ROOK:
+            img = wrIMG
+    else:
+        if piece.piece_type == chess.BISHOP:
+            img = bbIMG
+        elif piece.piece_type == chess.KNIGHT:
+            img = bnIMG
+        elif piece.piece_type == chess.QUEEN:
+            img = bqIMG
+        elif piece.piece_type == chess.KING:
+            img = bkIMG
+        elif piece.piece_type == chess.ROOK:
+            img = brIMG
+
+    screen.blit(img, (x*DIMTILE + 10, y*DIMTILE + 10))
 
 def startScreen():
     showMenu = True
@@ -125,9 +162,13 @@ def mainGameScreen():
 
         for i in range (0, 8):
             for j in range (0, 8):
+                global board
+                square = chess.square(i, 7-j)
                 if ((i + j) % 2 == 0):
                     pg.draw.rect(screen, white, 
                     (i*DIMTILE, j*DIMTILE, DIMTILE, DIMTILE))
+                if board.piece_at(square) != None:
+                    drawPiece(i, j, board.piece_at(square))
         
         
         pg.display.update()
