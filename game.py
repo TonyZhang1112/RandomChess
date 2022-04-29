@@ -6,7 +6,8 @@ import chess
 pg.init()
 
 # CONSTANTS
-DIMTILE = 80
+DIMTILE = int(80)
+userColor = chess.WHITE
 green = (0, 179, 0)
 white = (255, 255, 255)
 black = (0, 0, 0)
@@ -31,27 +32,49 @@ wkIMG = pg.image.load('images\WhiteKing.png')
 wqIMG = pg.image.load('images\WhiteQueen.png')
 wbIMG = pg.image.load('images\WhiteBishop.png')
 
-#set up chess screen window (100 x 100 pixels e/gameach tile)
+# Set up chess screen window (100 x 100 pixels e/gameach tile)
 screen = pg.display.set_mode([DIMTILE*8, DIMTILE*8])
 timer = pg.time.Clock()
 
 # Variables
-difficulty = 0
+reviewing = False
+difficulty = int(0)
+move = str('')
+pieceSelected = None
 board = chess.Board.from_chess960_pos(random.randint(0, 959))
-legalMoves = list(board.legal_moves)
-print(legalMoves[random.randint(0, len(legalMoves)-1)])
-move = legalMoves[random.randint(0, len(legalMoves)-1)]
-if move in board.legal_moves:
-    board.push(move)
-    print(board)
-print(board.piece_at(chess.B4))
-print(board.generate_legal_moves())
 
-#Event Handling
-def handleEvent(x, y):
-    print(difficulty)
+# Used to choose move of user's turn
+def selectMove(x: int, y: int):
+    global move
+    global pieceSelected
+    square = chess.square(x//DIMTILE, 7-(y//DIMTILE))
+    if (move == ''):
+        if (board.piece_at(square) != None and board.piece_at(square).color == userColor):
+            move += chess.square_name(square)
+            pieceSelected = board.piece_at(square)
+    else:
+        legalMoves = legalMoves = list(board.legal_moves)
+        dest = chess.square_name(chess.square(x//DIMTILE, 7-(y//DIMTILE)))
+        if (dest[1] == '8' or dest[1] == '1') and pieceSelected.piece_type == chess.PAWN:
+            dest += 'q'
+        try:
+            if board.parse_san(move+dest) in legalMoves:
+                board.push(board.parse_san(move+dest))
+                move = ""
+                pieceSelected = None
+        except:
+            # Illegal Move
+            move = ""
+            pieceSelected = None
 
-#EFFECTS: Creates text for buttons, helper
+def botMovePicker():
+    legalMoves = list(board.legal_moves)
+    pick = random.randint(0, len(legalMoves)-1)
+    move = legalMoves[pick]
+    if move in board.legal_moves:
+        board.push(move)
+
+# EFFECTS: Creates text for buttons, helper
 def makeTxt(text, font):
     textSurface = font.render(text, True, black)
     return textSurface, textSurface.get_rect()
@@ -66,11 +89,14 @@ def makeButton(txt, x, y, w, h, default, hover, function=None):
             global difficulty
             if function == "0":
                 difficulty = 0
+                mainGameScreen()
             elif function == "1":
                 difficulty = 1
-            else:
+                mainGameScreen()
+            elif function == "2":
                 difficulty = 2
-            mainGameScreen()
+                mainGameScreen()
+            
             
     else:
         pg.draw.rect(screen, default,(x,y,w,h))
@@ -117,7 +143,7 @@ def drawPiece(x, y, piece):
         elif piece.piece_type == chess.ROOK:
             img = brIMG
 
-    screen.blit(img, (x*DIMTILE + 10, y*DIMTILE + 10))
+    screen.blit(img, (x*DIMTILE + (DIMTILE-60)/2, y*DIMTILE + (DIMTILE-60)/2))
 
 def startScreen():
     showMenu = True
@@ -126,8 +152,6 @@ def startScreen():
             if event.type == pg.QUIT:
                 pg.quit()
                 quit()
-            if event.type == pg.MOUSEBUTTONDOWN:
-                handleEvent(mouse[0], mouse[1])
         
         mouse = pg.mouse.get_pos()
         screen.fill(white)
@@ -137,9 +161,9 @@ def startScreen():
         makeText("Choose a Difficulty:", DIMTILE*4, DIMTILE*2.25, 50, 'cambria')
 
         # Difficulty Buttons
-        makeButton("Easy", DIMTILE*3, DIMTILE*3, DIMTILE*2, 50, green, bGreen, "0")
-        makeButton("Medium", DIMTILE*3, DIMTILE*4.5, DIMTILE*2, 50, yellow, bYellow, "1")
-        makeButton("Hard", DIMTILE*3, DIMTILE*6, DIMTILE*2, 50, red, bRed, "2")
+        makeButton("Easy", DIMTILE*3, DIMTILE*3.25, DIMTILE*2, 50, green, bGreen, "0")
+        makeButton("Medium", DIMTILE*3, DIMTILE*4.75, DIMTILE*2, 50, yellow, bYellow, "1")
+        makeButton("Hard", DIMTILE*3, DIMTILE*6.25, DIMTILE*2, 50, red, bRed, "2")
 
 
         pg.display.update()
@@ -147,32 +171,95 @@ def startScreen():
 
 def mainGameScreen():
     isRunning = True
+    sqrSelect = None
     while isRunning:
+        if (move != ''):
+            sqrSelect = chess.parse_square(move)
+        else:
+            sqrSelect = None
+
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 pg.quit()
                 quit()
             if event.type == pg.MOUSEBUTTONDOWN:
-                handleEvent(mouse[0], mouse[1])
+                if (board.turn == userColor):
+                    selectMove(mouse[0], mouse[1])
 
         mouse = pg.mouse.get_pos()
+
+        if (board.outcome()):
+            if board.outcome().winner == chess.WHITE:
+                endScreen(0)
+            elif board.outcome().winner == chess.BLACK:
+                endScreen(1)
+            else:
+                endScreen(2)
 
 
         screen.fill(green)
 
         for i in range (0, 8):
             for j in range (0, 8):
-                global board
                 square = chess.square(i, 7-j)
-                if ((i + j) % 2 == 0):
+                if (i + j) % 2 == 0:
                     pg.draw.rect(screen, white, 
+                    (i*DIMTILE, j*DIMTILE, DIMTILE, DIMTILE))
+                if board.piece_at(square) != None and board.piece_at(square).piece_type == chess.KING and board.is_attacked_by(not board.piece_at(square).color, square):
+                    pg.draw.rect(screen, bRed, 
+                    (i*DIMTILE, j*DIMTILE, DIMTILE, DIMTILE))
+                if sqrSelect != None and chess.square_distance(square, sqrSelect) == 0:
+                    pg.draw.rect(screen, yellow, 
                     (i*DIMTILE, j*DIMTILE, DIMTILE, DIMTILE))
                 if board.piece_at(square) != None:
                     drawPiece(i, j, board.piece_at(square))
         
-        
+        if (board.turn != userColor):
+                pg.display.update()
+                time.sleep(0.5)
+                botMovePicker()
+                
         pg.display.update()
         timer.tick(30)
+
+# Displays
+def endScreen(outcome: int):
+    while True:
+        for event in pg.event.get():
+            if event.type == pg.QUIT:
+                pg.quit()
+                quit()
+        
+        mouse = pg.mouse.get_pos()
+        screen.fill(white)
+
+        if (outcome == 0):
+            makeText("White Wins!", DIMTILE*4, DIMTILE, 70, 'cambria')
+            makeText("Checkmate on Black", DIMTILE*4, DIMTILE*2.25, 50, 'cambria')
+
+        if (outcome == 1):
+            makeText("Black Wins!", DIMTILE*4, DIMTILE, 70, 'cambria')
+            makeText("Checkmate on White", DIMTILE*4, DIMTILE*2.25, 50, 'cambria')
+
+        if (outcome == 2):
+            makeText("Draw!", DIMTILE*4, DIMTILE, 70, 'cambria')
+            match board.outcome().termination:
+                case chess.Termination.STALEMATE:
+                    makeText("Stalemate", DIMTILE*4, DIMTILE*2.25, 50, 'cambria')
+                case chess.Termination.INSUFFICIENT_MATERIAL:
+                    makeText("By Insufficient Material", DIMTILE*4, DIMTILE*2.25, 50, 'cambria')
+                case chess.Termination.SEVENTYFIVE_MOVES:
+                    makeText("By 75-move Rule", DIMTILE*4, DIMTILE*2.25, 50, 'cambria')
+                case chess.Termination.FIVEFOLD_REPETITION:
+                    makeText("By Fivefold Repetition", DIMTILE*4, DIMTILE*2.25, 50, 'cambria')
+                case _:
+                    makeText("ERROR", DIMTILE*4, DIMTILE*2.25, 50, 'cambria')
+
+        pg.display.update()
+        timer.tick(30)
+
+
+
 
 startScreen()
 
