@@ -87,6 +87,7 @@ def makeButton(txt, x, y, w, h, default, hover, function=None):
         pg.draw.rect(screen, hover,(x,y,w,h))
         if press[0] == 1 and function != None:
             global difficulty
+            global reviewing
             if function == "0":
                 difficulty = 0
                 mainGameScreen()
@@ -96,7 +97,26 @@ def makeButton(txt, x, y, w, h, default, hover, function=None):
             elif function == "2":
                 difficulty = 2
                 mainGameScreen()
-            
+            elif function == "3":
+                global board
+                time.sleep(0.5)
+                board = chess.Board.from_chess960_pos(random.randint(0, 959))
+                reviewing = False
+                startScreen()
+            elif function == "4":
+                reviewing = True
+                mainGameScreen()
+            elif function == "5":
+                pg.quit()
+                quit()
+            else:
+                reviewing = False
+                if board.outcome().winner == chess.WHITE:
+                    endScreen(0)
+                elif board.outcome().winner == chess.BLACK:
+                    endScreen(1)
+                else:
+                    endScreen(2)
             
     else:
         pg.draw.rect(screen, default,(x,y,w,h))
@@ -183,12 +203,12 @@ def mainGameScreen():
                 pg.quit()
                 quit()
             if event.type == pg.MOUSEBUTTONDOWN:
-                if (board.turn == userColor):
+                if board.turn == userColor and reviewing == False:
                     selectMove(mouse[0], mouse[1])
 
         mouse = pg.mouse.get_pos()
 
-        if (board.outcome()):
+        if board.outcome() and reviewing == False:
             if board.outcome().winner == chess.WHITE:
                 endScreen(0)
             elif board.outcome().winner == chess.BLACK:
@@ -213,16 +233,18 @@ def mainGameScreen():
                     (i*DIMTILE, j*DIMTILE, DIMTILE, DIMTILE))
                 if board.piece_at(square) != None:
                     drawPiece(i, j, board.piece_at(square))
+                if (reviewing == True):
+                    makeButton("Back", DIMTILE*3.5, DIMTILE*3.75, DIMTILE, 50, yellow, bYellow, "6")
         
-        if (board.turn != userColor):
-                pg.display.update()
-                time.sleep(0.5)
-                botMovePicker()
-                
+        if board.turn != userColor and reviewing == False:
+            pg.display.update()
+            time.sleep(0.5)
+            botMovePicker()
+
         pg.display.update()
         timer.tick(30)
 
-# Displays
+# Displays when Checkmate or a Draw has been reached
 def endScreen(outcome: int):
     while True:
         for event in pg.event.get():
@@ -233,6 +255,7 @@ def endScreen(outcome: int):
         mouse = pg.mouse.get_pos()
         screen.fill(white)
 
+        # White Won
         if (outcome == 0):
             makeText("White Wins!", DIMTILE*4, DIMTILE, 70, 'cambria')
             makeText("Checkmate on Black", DIMTILE*4, DIMTILE*2.25, 50, 'cambria')
@@ -254,6 +277,11 @@ def endScreen(outcome: int):
                     makeText("By Fivefold Repetition", DIMTILE*4, DIMTILE*2.25, 50, 'cambria')
                 case _:
                     makeText("ERROR", DIMTILE*4, DIMTILE*2.25, 50, 'cambria')
+
+        # Endscreen Options
+        makeButton("Play Again", DIMTILE*2, DIMTILE*3.25, DIMTILE*4, 50, green, bGreen, "3")
+        makeButton("Review Board", DIMTILE*2, DIMTILE*4.75, DIMTILE*4, 50, yellow, bYellow, "4")
+        makeButton("RAGE QUIT", DIMTILE*2, DIMTILE*6.25, DIMTILE*4, 50, red, bRed, "5")
 
         pg.display.update()
         timer.tick(30)
