@@ -7,7 +7,7 @@ Face off against three different levels of bots in a game of chess where the bac
 Difficulties:
 Easy: A Greedy Bot, will always play the move that looks the best without even considering what the opponent may do. Will always detect a Mate in One.
 Medium: Slightly better than Easy, the medium bot will look at what the opponent may do, but not much further. Will always detect a Mate in Two.
-Hard: Looks further ahead. Will always detect a Mate in Three.
+Hard: Looks further ahead. Will always detect a Mate in Four.
 '''
 
 from cmath import inf
@@ -188,12 +188,6 @@ def evaluatePosition(board: chess.Board)->int:
 
 # Chooses bot moves for easy difficulty
 def easyMovePicker()->chess.Move:
-    '''
-    legalMoves = list(board.legal_moves)
-    pick = random.randint(0, len(legalMoves)-1)
-    move = legalMoves[pick]
-    return move
-    '''
     legalMoves = list(board.legal_moves)
     bestMoveIndex = int(0)
     bestMoveEval = int(99999)
@@ -209,34 +203,9 @@ def easyMovePicker()->chess.Move:
         board.pop()
     return legalMoves[bestMoveIndex]
 
-# Chooses bot moves for medium difficulty
-def mediumMovePicker(brd: chess.Board)->chess.Move:
-    legalMoves = list(brd.legal_moves)
-    bestMoveIndex = int(0)
-    bestMoveEval = int(99999)
-    for index in range (0, len(legalMoves)-1):
-        brd.push(legalMoves[index])
-        opponentMoves = list(brd.legal_moves)
-        bestOpponentMoveEval = int(-99999)
-
-        for i in range(0, len(opponentMoves)-1):
-            brd.push(opponentMoves[i])
-            if evaluatePosition(brd) < bestOpponentMoveEval:
-                bestOpponentMoveEval = evaluatePosition(brd)
-            brd.pop()
             
-        if bestOpponentMoveEval > bestMoveEval:
-            bestMoveEval = evaluatePosition(brd)
-            bestMoveIndex = index
-        elif (bestOpponentMoveEval == bestMoveEval):
-            if random.randint(0, 1) == 0:
-                bestMoveEval = evaluatePosition(brd)
-                bestMoveIndex = index
-        brd.pop()
-    return legalMoves[bestMoveIndex]
-            
-#Recommended depth is even
-# Setting: 0 for minimizing, 1 for maximizing
+# Chooses moves for medium and hard bots
+# Setting: 0 for player, 1 for bot
 def otherMovePicker(depth: int, setting: int, brd: chess.Board, alpha: int, beta: int)->chess.Move:
     if depth == 0: return None, evaluatePosition(brd)
 
@@ -244,7 +213,6 @@ def otherMovePicker(depth: int, setting: int, brd: chess.Board, alpha: int, beta
     if len(legalMoves) == 1:
         return legalMoves[0], evaluatePosition(brd)
     bestMove = None
-
     if (setting == 1):
         maxEval = 99999
         for move in legalMoves:
@@ -285,7 +253,7 @@ def botMovePicker():
         move = otherMovePicker(2, 1, board, inf, -inf)[0]
         board.push(move)
     else:
-        move = otherMovePicker(3, 1, board, inf, -inf)[0]
+        move = otherMovePicker(4, 1, board, inf, -inf)[0]
         board.push(move)
 
 # EFFECTS: Creates text for buttons, helper
