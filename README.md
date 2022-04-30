@@ -1,11 +1,13 @@
 # RandomChess
 
-## Random Piece Placement Chess Versus a Bot
+A Personal Project created by Tony Zhang
 
-A fun personal project where the player will be able to face off against verious difficulties of a bot in a variant of chess where pieces (aside from the pawns) will be placed randomly.
+Face off against three different levels of bots in a game of chess where the backrank configuation is random (but symettrical)
 
-## User stories
-- As a user, I wish to be able to move and capture pieces with the same rules as the classic Chess game.
-- As a user, I wish to choose between different bot difficulties.
-- As a user, I wish to be able to restart when the game ends.
-- As a user, I with to be able to pick different difficulties between games.
+## Difficulties:
+**Easy**: A Greedy Bot, will always play the move that looks the best without even considering what the opponent may do. Will always detect a Mate in One.
+
+**Medium**: Slightly better than Easy, the medium bot will look at what the opponent may do, but not much further. Will always detect a Mate in Two.
+
+**Hard**: Looks further ahead. Will always detect a Mate in Three.
+

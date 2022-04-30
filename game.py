@@ -1,3 +1,16 @@
+'''
+RandomChess
+Created by Tony Zhang
+
+Face off against three different levels of bots in a game of chess where the backrank configuation is random (but symettrical)
+
+Difficulties:
+Easy: A Greedy Bot, will always play the move that looks the best without even considering what the opponent may do. Will always detect a Mate in One.
+Medium: Slightly better than Easy, the medium bot will look at what the opponent may do, but not much further. Will always detect a Mate in Two.
+Hard: Looks further ahead. Will always detect a Mate in Three.
+'''
+
+from cmath import inf
 import pygame as pg
 import random
 import time
@@ -50,7 +63,7 @@ def selectMove(x: int, y: int):
     square = chess.square(x//DIMTILE, 7-(y//DIMTILE))
     if (move == ''):
         if (board.piece_at(square) != None and board.piece_at(square).color == userColor):
-            move += chess.square_name(square)
+            move = chess.square_name(square)
             pieceSelected = board.piece_at(square)
     else:
         legalMoves = legalMoves = list(board.legal_moves)
@@ -67,11 +80,212 @@ def selectMove(x: int, y: int):
             move = ""
             pieceSelected = None
 
-def botMovePicker():
+'''
+ Returns a value to add to the pieceValue in evaluatePosition.
+ Note that 1 <= x <= 8, 1 <= y <= 8, and that x = 1, y = 1 represents square A1.
+
+ Summary:
+ - Knights on the borders are bad. Knights in the center are good.
+ - Bishops on the borders are bad. Bishops in the center are good.
+ - Rooks are good in the backrank's center, and in the second rank of the opponent's territory
+ - Queens on the borders are slightly worse. Queens in the corners are bad.
+ - Kings are bad anywhere that aren't their backrank corners.
+ - Pawns are good in the center, and are very good close to the promotion square.
+    - Central pawns in the default position (d and e file) are bad.
+'''
+def PiecePosition(piece: chess.Piece, x: int, y: int)->int:
+    if piece.piece_type == chess.KNIGHT:
+        if (x == 1 or x == 8) and (y == 1 or y == 8):
+            return -50
+        elif x == 1 or x == 8 or y == 1 or y == 8:
+            return -30
+        elif (x == 4 or x == 5) and (y == 4 or y == 5):
+            return 20
+        elif (x >= 3 or x <= 6) and (y >= 3 or y <= 6):
+            return 10
+        else:
+            return 0
+    elif piece.piece_type == chess.BISHOP:
+        if (x == 1 or x == 8) and (y == 1 or y == 8):
+            return -20
+        elif x == 1 or x == 8 or y == 1 or y == 8:
+            return -10
+        elif (x >= 3 or x <= 6) and (y >= 3 or y <= 6):
+            return 10
+        else: return 0
+    elif piece.piece_type == chess.KING:
+        if piece.color == chess.BLACK:
+            if y < 7: return -50
+            elif x < 3 or x > 6: return 20
+            else: return 0
+        else:
+            if y > 2: return -50
+            elif x < 3 or x > 6: return 20
+            else: return 0
+    elif piece.piece_type == chess.QUEEN:
+        if (x == 1 or x == 8) and (y == 1 or y == 8):
+            return -20
+        elif x == 1 or x == 8 or y == 1 or y == 8:
+            return -10
+        elif (x >= 3 or x <= 6) and (y >= 3 or y <= 6):
+            return 5
+        else: return 0
+    elif piece.piece_type == chess.ROOK:
+        if piece.color == chess.BLACK:
+            if y == 2: return 10
+            elif y == 8 and (x == 4 or x == 5): return 5
+            else: return 0
+        else: 
+            if y == 7: return 10
+            elif y == 1 and (x == 4 or x == 5): return 5
+            else: return 0
+    else:
+        if piece.color == chess.BLACK:
+            if y == 2: return 50
+            elif y < 6 and (x == 4 or x == 5): return 25
+            elif y == 3: return 15
+            elif y == 7 and (x == 4 or x == 5): return -20
+            else: return 0
+        else: 
+            if y == 7: return 50
+            elif y > 3 and (x == 4 or x == 5): return 25
+            elif y == 6: return 15
+            elif y == 2 and (x == 4 or x == 5): return -20
+            else: return 0
+
+# Evaluates a position based on the pieces on the board
+# Negative evaluations are favorable towards black, positive towards white
+def evaluatePosition(board: chess.Board)->int:
+    totalEval = int(0)
+    if board.outcome():
+        if board.outcome().winner == chess.WHITE: return 50000
+        elif board.outcome().winner == chess.BLACK: return -50000
+        else: return 0
+    for i in range(0, 8):
+        for j in range(0, 8):
+            pieceValue = int(0)
+            square = chess.square(i, 7-j)
+            if board.piece_at(square) != None:
+                if board.piece_at(square).piece_type == chess.PAWN:
+                    pieceValue = 100
+                elif board.piece_at(square).piece_type == chess.QUEEN:
+                    pieceValue = 900
+                elif board.piece_at(square).piece_type == chess.KING:
+                    pieceValue = 10000
+                elif board.piece_at(square).piece_type == chess.ROOK:
+                    pieceValue = 500
+                else:
+                    pieceValue = 300
+
+                # Incorporate piece positioning
+                pieceValue += PiecePosition(board.piece_at(chess.square(i, 7-j)), i + 1, 8-j)
+            
+                if board.piece_at(chess.square(i, 7-j)).color == chess.WHITE:
+                    totalEval += pieceValue
+                else:
+                    totalEval -= pieceValue
+    return totalEval
+
+# Chooses bot moves for easy difficulty
+def easyMovePicker()->chess.Move:
+    '''
     legalMoves = list(board.legal_moves)
     pick = random.randint(0, len(legalMoves)-1)
     move = legalMoves[pick]
-    if move in board.legal_moves:
+    return move
+    '''
+    legalMoves = list(board.legal_moves)
+    bestMoveIndex = int(0)
+    bestMoveEval = int(99999)
+    for index in range (0, len(legalMoves)-1):
+        board.push(legalMoves[index])
+        if evaluatePosition(board) < bestMoveEval:
+            bestMoveEval = evaluatePosition(board)
+            bestMoveIndex = index
+        elif (evaluatePosition(board) == bestMoveEval):
+            if random.randint(0, 1) == 0:
+                bestMoveEval = evaluatePosition(board)
+                bestMoveIndex = index
+        board.pop()
+    return legalMoves[bestMoveIndex]
+
+# Chooses bot moves for medium difficulty
+def mediumMovePicker(brd: chess.Board)->chess.Move:
+    legalMoves = list(brd.legal_moves)
+    bestMoveIndex = int(0)
+    bestMoveEval = int(99999)
+    for index in range (0, len(legalMoves)-1):
+        brd.push(legalMoves[index])
+        opponentMoves = list(brd.legal_moves)
+        bestOpponentMoveEval = int(-99999)
+
+        for i in range(0, len(opponentMoves)-1):
+            brd.push(opponentMoves[i])
+            if evaluatePosition(brd) < bestOpponentMoveEval:
+                bestOpponentMoveEval = evaluatePosition(brd)
+            brd.pop()
+            
+        if bestOpponentMoveEval > bestMoveEval:
+            bestMoveEval = evaluatePosition(brd)
+            bestMoveIndex = index
+        elif (bestOpponentMoveEval == bestMoveEval):
+            if random.randint(0, 1) == 0:
+                bestMoveEval = evaluatePosition(brd)
+                bestMoveIndex = index
+        brd.pop()
+    return legalMoves[bestMoveIndex]
+            
+#Recommended depth is even
+# Setting: 0 for minimizing, 1 for maximizing
+def otherMovePicker(depth: int, setting: int, brd: chess.Board, alpha: int, beta: int)->chess.Move:
+    if depth == 0: return None, evaluatePosition(brd)
+
+    legalMoves = list(brd.legal_moves)
+    if len(legalMoves) == 1:
+        return legalMoves[0], evaluatePosition(brd)
+    bestMove = None
+
+    if (setting == 1):
+        maxEval = 99999
+        for move in legalMoves:
+            brd.push(move)
+            eval = otherMovePicker(depth-1, 0, brd, alpha, beta)[1]
+            brd.pop()
+            if (eval < maxEval):
+                maxEval = eval
+                bestMove = move
+            alpha = min(alpha, eval)
+            if beta >= alpha:
+                break
+        return bestMove, maxEval
+    
+    else:
+        minEval = -99999
+        for move in legalMoves:
+            brd.push(move)
+            eval = otherMovePicker(depth-1, 1, brd, alpha, beta)[1]
+            brd.pop()
+            if (eval > minEval):
+                minEval = eval
+                bestMove = move
+            beta = max(beta, eval)
+            if beta >= alpha:
+                break
+        return bestMove, minEval
+            
+
+
+
+# Choose a move-picking method based on the difficulty chosen
+def botMovePicker():
+    if difficulty == 0:
+        move = easyMovePicker()
+        board.push(move)
+    elif difficulty == 1:
+        move = otherMovePicker(2, 1, board, inf, -inf)[0]
+        board.push(move)
+    else:
+        move = otherMovePicker(3, 1, board, inf, -inf)[0]
         board.push(move)
 
 # EFFECTS: Creates text for buttons, helper
@@ -99,7 +313,7 @@ def makeButton(txt, x, y, w, h, default, hover, function=None):
                 mainGameScreen()
             elif function == "3":
                 global board
-                time.sleep(0.5)
+                time.sleep(0.2)
                 board = chess.Board.from_chess960_pos(random.randint(0, 959))
                 reviewing = False
                 startScreen()
@@ -110,6 +324,7 @@ def makeButton(txt, x, y, w, h, default, hover, function=None):
                 pg.quit()
                 quit()
             else:
+                time.sleep(0.5)
                 reviewing = False
                 if board.outcome().winner == chess.WHITE:
                     endScreen(0)
@@ -165,9 +380,9 @@ def drawPiece(x, y, piece):
 
     screen.blit(img, (x*DIMTILE + (DIMTILE-60)/2, y*DIMTILE + (DIMTILE-60)/2))
 
+# Main Menu
 def startScreen():
-    showMenu = True
-    while showMenu:
+    while True:
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 pg.quit()
@@ -189,10 +404,10 @@ def startScreen():
         pg.display.update()
         timer.tick(30)
 
+# In Game
 def mainGameScreen():
-    isRunning = True
     sqrSelect = None
-    while isRunning:
+    while True:
         if (move != ''):
             sqrSelect = chess.parse_square(move)
         else:
@@ -238,7 +453,7 @@ def mainGameScreen():
         
         if board.turn != userColor and reviewing == False:
             pg.display.update()
-            time.sleep(0.5)
+            time.sleep(0.2)
             botMovePicker()
 
         pg.display.update()
@@ -252,7 +467,6 @@ def endScreen(outcome: int):
                 pg.quit()
                 quit()
         
-        mouse = pg.mouse.get_pos()
         screen.fill(white)
 
         # White Won
@@ -260,10 +474,12 @@ def endScreen(outcome: int):
             makeText("White Wins!", DIMTILE*4, DIMTILE, 70, 'cambria')
             makeText("Checkmate on Black", DIMTILE*4, DIMTILE*2.25, 50, 'cambria')
 
+        # Black Won
         if (outcome == 1):
             makeText("Black Wins!", DIMTILE*4, DIMTILE, 70, 'cambria')
             makeText("Checkmate on White", DIMTILE*4, DIMTILE*2.25, 50, 'cambria')
 
+        # Draw
         if (outcome == 2):
             makeText("Draw!", DIMTILE*4, DIMTILE, 70, 'cambria')
             match board.outcome().termination:
@@ -286,11 +502,5 @@ def endScreen(outcome: int):
         pg.display.update()
         timer.tick(30)
 
-
-
-
+# Starts the Main Menu
 startScreen()
-
-# User has Exit
-pg.quit()
-quit()
