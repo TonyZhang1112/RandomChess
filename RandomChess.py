@@ -288,9 +288,11 @@ def makeButton(txt, x, y, w, h, default, hover, function=None):
                 mainGameScreen()
             elif function == "3":
                 global board
+                global lastBotMove
                 time.sleep(0.2)
                 board = chess.Board.from_chess960_pos(random.randint(0, 959))
                 reviewing = False
+                lastBotMove = None
                 startScreen()
             elif function == "4":
                 reviewing = True
@@ -418,7 +420,7 @@ def mainGameScreen():
                 if sqrSelect != None and chess.square_distance(square, sqrSelect) == 0:
                     pg.draw.rect(screen, yellow, 
                     (i*DIMTILE, j*DIMTILE, DIMTILE, DIMTILE))
-                if lastBotMove.to_square == square or lastBotMove.from_square == square:
+                if lastBotMove != None and (lastBotMove.to_square == square or lastBotMove.from_square == square):
                     pg.draw.rect(screen, pink, 
                     (i*DIMTILE, j*DIMTILE, DIMTILE, DIMTILE))
                 if board.piece_at(square) != None and board.piece_at(square).piece_type == chess.KING and board.is_attacked_by(not board.piece_at(square).color, square):
