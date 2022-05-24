@@ -26,6 +26,7 @@ white = (255, 255, 255)
 black = (0, 0, 0)
 yellow = (200, 200, 0)
 red = (150, 0, 0)
+pink = (219, 112, 147)
 
 bRed = (255, 0, 0)
 bYellow = (255, 255, 0)
@@ -54,17 +55,21 @@ reviewing = False
 difficulty = int(0)
 move = str('')
 pieceSelected = None
+pSelectedTile = None
+lastBotMove = chess.Move(None, None)
 board = chess.Board.from_chess960_pos(random.randint(0, 959))
 
 # Used to choose move of user's turn
 def selectMove(x: int, y: int):
     global move
     global pieceSelected
+    global pSelectedTile
     square = chess.square(x//DIMTILE, 7-(y//DIMTILE))
     if (move == ''):
         if (board.piece_at(square) != None and board.piece_at(square).color == userColor):
             move = chess.square_name(square)
             pieceSelected = board.piece_at(square)
+            pSelectedTile = square
     else:
         legalMoves = legalMoves = list(board.legal_moves)
         dest = chess.square_name(chess.square(x//DIMTILE, 7-(y//DIMTILE)))
@@ -246,6 +251,7 @@ def otherMovePicker(depth: int, setting: int, brd: chess.Board, alpha: int, beta
 
 # Choose a move-picking method based on the difficulty chosen
 def botMovePicker():
+    global lastBotMove
     if difficulty == 0:
         move = easyMovePicker()
         board.push(move)
@@ -255,6 +261,7 @@ def botMovePicker():
     else:
         move = otherMovePicker(4, 1, board, inf, -inf)[0]
         board.push(move)
+    lastBotMove = move
 
 # EFFECTS: Creates text for buttons, helper
 def makeTxt(text, font):
@@ -408,12 +415,20 @@ def mainGameScreen():
                 if (i + j) % 2 == 0:
                     pg.draw.rect(screen, white, 
                     (i*DIMTILE, j*DIMTILE, DIMTILE, DIMTILE))
-                if board.piece_at(square) != None and board.piece_at(square).piece_type == chess.KING and board.is_attacked_by(not board.piece_at(square).color, square):
-                    pg.draw.rect(screen, bRed, 
-                    (i*DIMTILE, j*DIMTILE, DIMTILE, DIMTILE))
                 if sqrSelect != None and chess.square_distance(square, sqrSelect) == 0:
                     pg.draw.rect(screen, yellow, 
                     (i*DIMTILE, j*DIMTILE, DIMTILE, DIMTILE))
+                if lastBotMove.to_square == square or lastBotMove.from_square == square:
+                    pg.draw.rect(screen, pink, 
+                    (i*DIMTILE, j*DIMTILE, DIMTILE, DIMTILE))
+                if board.piece_at(square) != None and board.piece_at(square).piece_type == chess.KING and board.is_attacked_by(not board.piece_at(square).color, square):
+                    pg.draw.rect(screen, bRed, 
+                    (i*DIMTILE, j*DIMTILE, DIMTILE, DIMTILE))
+                if pieceSelected:
+                    for x in list(board.legal_moves):
+                        if x.from_square == pSelectedTile and x.to_square == square:
+                            pg.draw.rect(screen, bRed, 
+                            (i*DIMTILE, j*DIMTILE, DIMTILE, DIMTILE))
                 if board.piece_at(square) != None:
                     drawPiece(i, j, board.piece_at(square))
                 if (reviewing == True):
